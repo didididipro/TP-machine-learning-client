@@ -1,92 +1,123 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useToast } from 'primevue/usetoast'
-import InputText from 'primevue/inputtext'
-import Button from 'primevue/button'
-import Toast from 'primevue/toast'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
+import { ref } from "vue";
+import { useToast } from "primevue/usetoast";
+import InputText from "primevue/inputtext";
+import Button from "primevue/button";
+import Toast from "primevue/toast";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
+import Dialog from "primevue/dialog";
+import { DateTime } from "luxon";
 
-const toast = useToast()
-const loading = ref(false)
-const manualData = ref([{ id_patient: 'patient_1', DAO: '' }])
-const predictionResults = ref([])
-const sampleCounter = ref(2)
+const visible = ref(false);
+const predictions = ref([]);
+const isGettingPredictions = ref(false);
+const getPredictions = async () => {
+  isGettingPredictions.value = true;
+  const response = await fetch(
+    `${import.meta.env.VITE_BASE_URL}/api/predictions/`,
+    {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+
+  isGettingPredictions.value = false;
+  if (!response.ok) throw new Error("Erreur réseau");
+
+  const result = await response.json()
+  const data = result.map((pred: any) => ({
+        ...pred,
+        confidence: `${pred.confidence * 100} %`,
+        date: DateTime.fromISO(pred.date).toLocal().toFormat("dd MMM yyyy à HH:mm"),
+      }));
+  predictions.value = data;
+};
+
+getPredictions();
+
+const toast = useToast();
+const loading = ref(false);
+const manualData = ref([{ nom_patient: "", DAO: "" }]);
+const predictionResults = ref([]);
 
 const addGeneInput = () => {
   manualData.value.push({
-    id_patient: `patient_${sampleCounter.value++}`,
-    DAO: ''
-  })
-}
+    nom_patient: "",
+    DAO: "",
+  });
+};
 
 const removeGeneInput = (index: number) => {
   if (manualData.value.length > 1) {
-    manualData.value.splice(index, 1)
+    manualData.value.splice(index, 1);
   } else {
     toast.add({
-      severity: 'warn',
-      summary: 'Avertissement',
-      detail: 'Au moins une entrée est requise',
+      severity: "warn",
+      summary: "Avertissement",
+      detail: "Au moins une entrée est requise",
       life: 3000,
-    })
+    });
   }
-}
+};
 
 const launchPrediction = async () => {
-  const cleanedData = manualData.value.map(({ id_patient, DAO }) => ({
-    id_patient: id_patient.trim(),
+  const cleanedData = manualData.value.map(({ nom_patient, DAO }) => ({
+    nom_patient: nom_patient.trim(),
     DAO: parseFloat(DAO),
-  }))
+  }));
 
-  if (cleanedData.some(d => !d.id_patient || isNaN(d.DAO))) {
+  if (cleanedData.some((d) => !d.nom_patient || isNaN(d.DAO))) {
     toast.add({
-      severity: 'error',
-      summary: 'Erreur',
-      detail: 'Toutes les entrées doivent être valides',
+      severity: "error",
+      summary: "Erreur",
+      detail: "Toutes les entrées doivent être valides",
       life: 3000,
-    })
-    return
+    });
+    return;
   }
 
   try {
-    loading.value = true
-    const response = await fetch('https://tp-machine-learning-server.onrender.com/api/predict/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cleanedData),
-    })
+    loading.value = true;
+    const response = await fetch(
+      `${import.meta.env.VITE_BASE_URL}/api/predict/`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cleanedData),
+      },
+    );
 
-    loading.value = false
-    if (!response.ok) throw new Error('Erreur réseau')
+    loading.value = false;
+    if (!response.ok) throw new Error("Erreur réseau");
 
-    const result = await response.json()
-    // Adapter les champs si le backend utilise "id_sample"
-    predictionResults.value = result.map((r: any, i: number) => ({
-      id_patient: manualData.value[i]?.id_patient || `patient_${i+1}`,
+    const result = await response.json();
+    const data = result.map((pred: any) => ({
+        ...pred,
+        confidence: `${pred.confidence * 100} %`,
+        date: DateTime.fromISO(pred.date).toLocal().toFormat("dd MMM yyyy à HH:mm"),
+      }));
 
-      prediction: r.prediction,
-      confidence: r.confidence,
-    }))
+    predictionResults.value = data;
 
     toast.add({
-      severity: 'success',
-      summary: 'Succès',
-      detail: 'Prédictions reçues',
+      severity: "success",
+      summary: "Succès",
+      detail: "Prédictions reçues",
       life: 3000,
-    })
+    });
+    getPredictions();
   } catch (err) {
-    loading.value = false
+    loading.value = false;
     toast.add({
-      severity: 'error',
-      summary: 'Erreur',
-      detail: 'Échec de la prédiction',
+      severity: "error",
+      summary: "Erreur",
+      detail: "Échec de la prédiction",
       life: 3000,
-    })
+    });
   }
-}
+};
 </script>
-
 
 <template>
   <div class="min-h-screen bg-gray-50 flex flex-col items-center p-6">
@@ -94,8 +125,14 @@ const launchPrediction = async () => {
       <h2 class="text-3xl font-bold text-gray-800 mb-4 text-center">
         Prédiction du Cancer du Côlon
       </h2>
+      <div class="flex justify-center p-2">
+        <Button class="font-semibold py-2 px-4 rounded mb-8" :loading="isGettingPredictions" @click="visible = true"
+          >Consulter l'Historique</Button
+        >
+      </div>
       <p class="text-gray-600 mb-6 text-center">
-        Entrez manuellement les données pour prédire les risques de cancer du côlon.
+        Entrez manuellement les données pour prédire les risques de cancer du
+        côlon.
       </p>
 
       <!-- Formulaire dynamique -->
@@ -106,11 +143,20 @@ const launchPrediction = async () => {
           :key="index"
           class="flex items-center gap-4"
         >
-          <InputText v-model="entry.id_patient" class="w-1/2" readonly />
+          <InputText v-model="entry.nom_patient" placeholder="Nom du patient" class="w-1/2" />
           <InputText v-model="entry.DAO" placeholder="DAO" class="w-1/2" />
-          <Button icon="pi pi-trash" severity="danger" text @click="removeGeneInput(index)" />
+          <Button
+            icon="pi pi-trash"
+            severity="danger"
+            text
+            @click="removeGeneInput(index)"
+          />
         </div>
-        <Button icon="pi pi-plus" label="Ajouter une entrée" @click="addGeneInput" />
+        <Button
+          icon="pi pi-plus"
+          label="Ajouter une entrée"
+          @click="addGeneInput"
+        />
       </div>
 
       <!-- Bouton prédiction -->
@@ -119,13 +165,15 @@ const launchPrediction = async () => {
         label="Lancer la Prédiction"
         icon="pi pi-play"
         severity="primary"
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded mb-8"
+        class="w-full  font-semibold py-2 px-4 rounded mb-8"
         @click="launchPrediction"
       />
 
       <!-- Résultats -->
       <div v-if="predictionResults.length > 0">
-        <h3 class="text-xl font-semibold text-gray-700 mb-4">Résultats de la Prédiction</h3>
+        <h3 class="text-xl font-semibold text-gray-700 mb-4">
+          Résultats de la Prédiction
+        </h3>
         <DataTable
           showGridlines
           :value="predictionResults"
@@ -133,8 +181,8 @@ const launchPrediction = async () => {
           class="p-datatable-sm"
           responsiveLayout="scroll"
         >
-          <Column field="id_patient" header="ID" />
-          <Column field="prediction" header="Prédiction" />
+          <Column field="nom_patient" header="Nom du patient" />
+          <Column field="pred" header="Prédiction" />
           <Column field="confidence" header="Confiance" />
         </DataTable>
       </div>
@@ -142,4 +190,26 @@ const launchPrediction = async () => {
       <Toast position="top-center" />
     </div>
   </div>
+
+  <Dialog
+    v-model:visible="visible"
+    modal
+    header="Historique des prédictions"
+    :style="{ width: '50rem' }"
+    :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+  >
+    <DataTable
+      showGridlines
+      :value="predictions"
+      tableStyle="min-width: 20rem"
+      class="p-datatable-sm"
+      responsiveLayout="scroll"
+    >
+      <Column field="nom_patient" header="Nom du patient" />
+      <Column field="value" header="Gène DAO" />
+      <Column field="pred" header="Prédiction" />
+      <Column field="confidence" header="Confiance" />
+      <Column field="date" header="Date" />
+    </DataTable>
+  </Dialog>
 </template>

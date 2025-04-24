@@ -13,6 +13,7 @@
   "dependencies": {
     "@primeuix/themes": "^1.0.3",
     "@tailwindcss/vite": "^4.1.4",
+    "luxon": "^3.6.1",
     "primeicons": "^7.0.0",
     "primevue": "^4.3.3",
     "tailwindcss": "^4.1.4",
