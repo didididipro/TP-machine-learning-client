@@ -25,12 +25,12 @@ const getPredictions = async () => {
   isGettingPredictions.value = false;
   if (!response.ok) throw new Error("Erreur réseau");
 
-  const result = await response.json()
+  const result = await response.json();
   const data = result.map((pred: any) => ({
-        ...pred,
-        confidence: `${pred.confidence * 100} %`,
-        date: DateTime.fromISO(pred.date).toLocal().toFormat("dd MMM yyyy à HH:mm"),
-      }));
+    ...pred,
+    confidence: `${pred.confidence * 100} %`,
+    date: DateTime.fromISO(pred.date).toLocal().toFormat("dd MMM yyyy à HH:mm"),
+  }));
   predictions.value = data;
 };
 
@@ -93,10 +93,12 @@ const launchPrediction = async () => {
 
     const result = await response.json();
     const data = result.map((pred: any) => ({
-        ...pred,
-        confidence: `${pred.confidence * 100} %`,
-        date: DateTime.fromISO(pred.date).toLocal().toFormat("dd MMM yyyy à HH:mm"),
-      }));
+      ...pred,
+      confidence: `${pred.confidence * 100} %`,
+      date: DateTime.fromISO(pred.date)
+        .toLocal()
+        .toFormat("dd MMM yyyy à HH:mm"),
+    }));
 
     predictionResults.value = data;
 
@@ -126,7 +128,10 @@ const launchPrediction = async () => {
         Prédiction du Cancer du Côlon
       </h2>
       <div class="flex justify-center p-2">
-        <Button class="font-semibold py-2 px-4 rounded mb-8" :loading="isGettingPredictions" @click="visible = true"
+        <Button
+          class="font-semibold py-2 px-4 rounded mb-8"
+          :loading="isGettingPredictions"
+          @click="visible = true"
           >Consulter l'Historique</Button
         >
       </div>
@@ -143,7 +148,11 @@ const launchPrediction = async () => {
           :key="index"
           class="flex items-center gap-4"
         >
-          <InputText v-model="entry.nom_patient" placeholder="Nom du patient" class="w-1/2" />
+          <InputText
+            v-model="entry.nom_patient"
+            placeholder="Nom du patient"
+            class="w-1/2"
+          />
           <InputText v-model="entry.DAO" placeholder="DAO" class="w-1/2" />
           <Button
             icon="pi pi-trash"
@@ -165,7 +174,7 @@ const launchPrediction = async () => {
         label="Lancer la Prédiction"
         icon="pi pi-play"
         severity="primary"
-        class="w-full  font-semibold py-2 px-4 rounded mb-8"
+        class="w-full font-semibold py-2 px-4 rounded mb-8"
         @click="launchPrediction"
       />
 
@@ -182,7 +191,19 @@ const launchPrediction = async () => {
           responsiveLayout="scroll"
         >
           <Column field="nom_patient" header="Nom du patient" />
-          <Column field="pred" header="Prédiction" />
+          <Column header="Prédiction">
+            <template #body="slotProps">
+              <span
+                :class="
+                  slotProps.data.pred === 'Tumoral'
+                    ? 'text-red-500 font-bold'
+                    : 'text-teal-500 font-bold'
+                "
+              >
+                {{ slotProps.data.pred }}
+              </span>
+            </template>
+          </Column>
           <Column field="confidence" header="Confiance" />
         </DataTable>
       </div>
@@ -207,7 +228,19 @@ const launchPrediction = async () => {
     >
       <Column field="nom_patient" header="Nom du patient" />
       <Column field="value" header="Gène DAO" />
-      <Column field="pred" header="Prédiction" />
+      <Column header="Prédiction">
+        <template #body="slotProps">
+          <span
+            :class="
+              slotProps.data.pred === 'Tumoral'
+                ? 'text-red-500 font-bold'
+                : 'text-teal-500 font-bold'
+            "
+          >
+            {{ slotProps.data.pred }}
+          </span>
+        </template>
+      </Column>
       <Column field="confidence" header="Confiance" />
       <Column field="date" header="Date" />
     </DataTable>
