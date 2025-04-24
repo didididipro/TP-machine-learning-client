@@ -139,7 +139,7 @@ const launchPrediction = async () => {
         </DataTable>
       </div>
 
-      <Toast position="top-right" />
+      <Toast position="center" />
     </div>
   </div>
 </template>
