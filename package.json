@@ -23,6 +23,7 @@
   "devDependencies": {
     "@primevue/auto-import-resolver": "^4.3.3",
     "@tsconfig/node22": "^22.0.1",
+    "@types/luxon": "^3.6.2",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/tsconfig": "^0.7.0",
