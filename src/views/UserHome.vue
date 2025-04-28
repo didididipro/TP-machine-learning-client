@@ -38,13 +38,13 @@ getPredictions();
 
 const toast = useToast();
 const loading = ref(false);
-const manualData = ref([{ nom_patient: "", DAO: "" }]);
+const manualData = ref([{ nom_patient: "", UGP2: "" }]);
 const predictionResults = ref([]);
 
 const addGeneInput = () => {
   manualData.value.push({
     nom_patient: "",
-    DAO: "",
+    UGP2: "",
   });
 };
 
@@ -62,12 +62,12 @@ const removeGeneInput = (index: number) => {
 };
 
 const launchPrediction = async () => {
-  const cleanedData = manualData.value.map(({ nom_patient, DAO }) => ({
+  const cleanedData = manualData.value.map(({ nom_patient, UGP2 }) => ({
     nom_patient: nom_patient.trim(),
-    DAO: parseFloat(DAO),
+    UGP2: parseFloat(UGP2),
   }));
 
-  if (cleanedData.some((d) => !d.nom_patient || isNaN(d.DAO))) {
+  if (cleanedData.some((d) => !d.nom_patient || isNaN(d.UGP2))) {
     toast.add({
       severity: "error",
       summary: "Erreur",
@@ -153,7 +153,7 @@ const launchPrediction = async () => {
             placeholder="Nom du patient"
             class="w-1/2"
           />
-          <InputText v-model="entry.DAO" placeholder="DAO" class="w-1/2" />
+          <InputText v-model="entry.UGP2" placeholder="UGP2" class="w-1/2" />
           <Button
             icon="pi pi-trash"
             severity="danger"
@@ -227,7 +227,7 @@ const launchPrediction = async () => {
       responsiveLayout="scroll"
     >
       <Column field="nom_patient" header="Nom du patient" />
-      <Column field="value" header="Gène DAO" />
+      <Column field="value" header="Gène UGP2" />
       <Column header="Prédiction">
         <template #body="slotProps">
           <span
